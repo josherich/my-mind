@@ -8,6 +8,8 @@ MM.Item = function() {
 	this._autoShape = true;
 	this._color = null;
 	this._value = null;
+	this._link_url = null;
+	this._link_title = null;
 	this._status = null;
 	this._side = null; /* side preference */
 	this._id = MM.generateId();
@@ -26,22 +28,42 @@ MM.Item = function() {
 		text: document.createElement("div"),
 		children: document.createElement("ul"),
 		toggle: document.createElement("div"),
+		add: document.createElement("div"),
+			_input: document.createElement("input"),
+			_submit: document.createElement("button"),
+			_link: document.createElement("a"),
+			_delLink: document.createElement("button"),
 		canvas: document.createElement("canvas")
 	}
+
 	this._dom.node.classList.add("item");
 	this._dom.content.classList.add("content");
 	this._dom.status.classList.add("status");
 	this._dom.value.classList.add("value");
 	this._dom.text.classList.add("text");
 	this._dom.toggle.classList.add("toggle");
+	this._dom.add.classList.add("add");
 	this._dom.children.classList.add("children");
+	this._dom._input.type = "text";
+	this._dom._input.name = "link";
+	this._dom._submit.textContent = "submit";
 
 	this._dom.content.appendChild(this._dom.text); /* status+value are appended in layout */
+	this._dom.content.appendChild(this._dom._link);
+	this._dom.add.appendChild(this._dom._input);
+	this._dom.add.appendChild(this._dom._submit);
+
 	this._dom.node.appendChild(this._dom.canvas);
 	this._dom.node.appendChild(this._dom.content);
+	this._dom.node.appendChild(this._dom.add);
+
 	/* toggle+children are appended when children exist */
 
+	this._dom._submit.addEventListener("click", this);
 	this._dom.toggle.addEventListener("click", this);
+	this._dom._input.addEventListener("click", this);
+	this._dom.add.addEventListener("mouseover", this);
+	this._dom.add.addEventListener("mouseleave", this);
 }
 
 MM.Item.COLOR = "#999";
@@ -54,7 +76,7 @@ MM.Item.COLOR = "#999";
      *                                                                                    ______ path, search
      *                                                                                          __________________________ end with a non-forbidden char
      *                                                                                                                    ______ end of word or end of string
-     */                                                                                                                           
+     */
 MM.Item.RE = /\b(([a-z][\w-]+:\/\/\w)|(([\w-]+\.){2,}[a-z][\w-]+)|([\w-]+\.[a-z][\w-]+\/))[^\s]*([^\s,.;:?!<>\(\)\[\]'"])?($|\b)/i;
 
 MM.Item.fromJSON = function(data) {
@@ -66,10 +88,11 @@ MM.Item.prototype.toJSON = function() {
 		id: this._id,
 		text: this.getText()
 	}
-	
+
 	if (this._side) { data.side = this._side; }
 	if (this._color) { data.color = this._color; }
 	if (this._value) { data.value = this._value; }
+	if (this._link) {data.link_title = this._dom._link.textContent; data.link_url = this._dom._link.href}
 	if (this._status) { data.status = this._status; }
 	if (this._layout) { data.layout = this._layout.id; }
 	if (!this._autoShape) { data.shape = this._shape.id; }
@@ -90,6 +113,8 @@ MM.Item.prototype.fromJSON = function(data) {
 	if (data.side) { this._side = data.side; }
 	if (data.color) { this._color = data.color; }
 	if (data.value) { this._value = data.value; }
+	if (data.link_title) {this._link_title = data.link_title; }
+	if (data.link_url) {this._link_url = data.link_url; }
 	if (data.status) {
 		this._status = data.status;
 		if (this._status == "maybe") { this._status = "computed"; }
@@ -110,22 +135,22 @@ MM.Item.prototype.mergeWith = function(data) {
 
 	if (this.getText() != data.text && !this._dom.text.contentEditable) { this.setText(data.text); }
 
-	if (this._side != data.side) { 
+	if (this._side != data.side) {
 		this._side = data.side;
 		dirty = 1;
 	}
 
-	if (this._color != data.color) { 
+	if (this._color != data.color) {
 		this._color = data.color;
 		dirty = 2;
 	}
 
-	if (this._value != data.value) { 
+	if (this._value != data.value) {
 		this._value = data.value;
 		dirty = 1;
 	}
 
-	if (this._status != data.status) { 
+	if (this._status != data.status) {
 		this._status = data.status;
 		dirty = 1;
 	}
@@ -201,7 +226,7 @@ MM.Item.prototype.update = function(doNotRecurse) {
 			this._shape.set(this);
 		}
 	}
-	
+
 	this._updateStatus();
 	this._updateValue();
 
@@ -314,7 +339,7 @@ MM.Item.prototype.getOwnLayout = function() {
 
 MM.Item.prototype.setLayout = function(layout) {
 	this._layout = layout;
-	return this.updateSubtree();	
+	return this.updateSubtree();
 }
 
 MM.Item.prototype.getShape = function() {
@@ -369,7 +394,7 @@ MM.Item.prototype.setParent = function(parent) {
 MM.Item.prototype.insertChild = function(child, index) {
 	/* Create or remove child as necessary. This must be done before computing the index (inserting own child) */
 	var newChild = false;
-	if (!child) { 
+	if (!child) {
 		child = new MM.Item();
 		newChild = true;
 	} else if (child.getParent() && child.getParent().removeChild) { /* only when the child has non-map parent */
@@ -382,12 +407,12 @@ MM.Item.prototype.insertChild = function(child, index) {
 	}
 
 	if (arguments.length < 2) { index = this._children.length; }
-	
+
 	var next = null;
 	if (index < this._children.length) { next = this._children[index].getDOM().node; }
 	this._dom.children.insertBefore(child.getDOM().node, next);
 	this._children.splice(index, 0, child);
-	
+
 	return child.setParent(this);
 }
 
@@ -396,14 +421,14 @@ MM.Item.prototype.removeChild = function(child) {
 	this._children.splice(index, 1);
 	var node = child.getDOM().node;
 	node.parentNode.removeChild(node);
-	
+
 	child.setParent(null);
-	
+
 	if (!this._children.length) {
 		this._dom.toggle.parentNode.removeChild(this._dom.toggle);
 		this._dom.children.parentNode.removeChild(this._dom.children);
 	}
-	
+
 	return this.update();
 }
 
@@ -438,6 +463,7 @@ MM.Item.prototype.stopEditing = function() {
 }
 
 MM.Item.prototype.handleEvent = function(e) {
+	var self = this;
 	switch (e.type) {
 		case "input":
 			this.update();
@@ -445,6 +471,9 @@ MM.Item.prototype.handleEvent = function(e) {
 		break;
 
 		case "keydown":
+			if (e.target == this._dom._input) {
+				e.stopPropagation();
+			}
 			if (e.keyCode == 9) { e.preventDefault(); } /* TAB has a special meaning in this app, do not use it to change focus */
 		break;
 
@@ -452,11 +481,69 @@ MM.Item.prototype.handleEvent = function(e) {
 			MM.Command.Finish.execute();
 		break;
 
+		case "mousemove":
+		case "mousedown":
+			if (e.target == this._dom._input) {
+				e.stopPropagation();
+				return;
+			}
+		break;
+
 		case "click":
+			if (e.target == this._dom._input) {
+				e.stopPropagation();
+				return;
+			}
+			if (e.target == this._dom._submit) {
+				var url = this._dom._input.value;
+				console.log(this._dom._input.value);
+				$.ajax({
+					type: 'POST',
+					url: 'http://localhost:3000/api/links/getTitle',
+					data: {link_url: url},
+					success: function(data) {
+						var title = data.data.title;
+						self._link = {title: title};
+						self._dom._link.textContent = title;
+						self._dom._link.href = url;
+						if (data.data.img) {
+							self._link.img = data.data.img;
+							var img = document.createElement("img");
+							img.src = data.data.img;
+							self._dom.content.appendChild(img);
+							self._dom.content.classList.add('saved');
+						}
+						self._dom.add.classList.add('disabled');
+						self.update();
+					},
+					error: function(xhr, type) {
+
+					}
+				});
+			}
 			if (this._collapsed) { this.expand(); } else { this.collapse(); }
 			MM.App.select(this);
 		break;
+
+		case "mouseover":
+			if (e.target == this._dom.add) {
+				this._dom.add.classList.add('active');
+				console.log('hover')
+			}
+		break;
+
+		case "mouseleave":
+			if (e.target == this._dom.add) {
+				this._dom.add.classList.remove('active');
+			}
+		break;
 	}
+}
+// douban book;
+// link
+//
+MM.Item.prototype.showResourceType = function() {
+
 }
 
 MM.Item.prototype._getAutoShape = function() {
@@ -467,9 +554,9 @@ MM.Item.prototype._getAutoShape = function() {
 		node = node.getParent();
 	}
 	switch (depth) {
-		case 0: return MM.Shape.Ellipse;
+		case 0: return MM.Shape.Box;
 		case 1: return MM.Shape.Box;
-		default: return MM.Shape.Underline;
+		default: return MM.Shape.Box;
 	}
 }
 
@@ -511,11 +598,11 @@ MM.Item.prototype._updateValue = function() {
 		this._dom.value.innerHTML = this._value;
 		return;
 	}
-	
+
 	var childValues = this._children.map(function(child) {
 		return child.getComputedValue();
 	});
-	
+
 	var result = 0;
 	switch (this._value) {
 		case "sum":
@@ -523,22 +610,22 @@ MM.Item.prototype._updateValue = function() {
 				return prev+cur;
 			}, 0);
 		break;
-		
+
 		case "avg":
 			var sum = childValues.reduce(function(prev, cur) {
 				return prev+cur;
 			}, 0);
 			result = (childValues.length ? sum/childValues.length : 0);
 		break;
-		
+
 		case "max":
 			result = Math.max.apply(Math, childValues);
 		break;
-		
+
 		case "min":
 			result = Math.min.apply(Math, childValues);
 		break;
-		
+
 		default:
 			this._computed.value = 0;
 			this._dom.value.innerHTML = "";
@@ -546,7 +633,7 @@ MM.Item.prototype._updateValue = function() {
 			return;
 		break;
 	}
-	
+
 	this._computed.value = result;
 	this._dom.value.innerHTML = (Math.round(result) == result ? result : result.toFixed(3));
 }
@@ -561,7 +648,7 @@ MM.Item.prototype._findLinks = function(node) {
 				if (child.nodeName.toLowerCase() == "a") { continue; }
 				this._findLinks(child);
 			break;
-			
+
 			case 3: /* text */
 				var result = child.nodeValue.match(this.constructor.RE);
 				if (result) {
@@ -569,13 +656,13 @@ MM.Item.prototype._findLinks = function(node) {
 					var after = child.nodeValue.substring(result.index + result[0].length);
 					var link = document.createElement("a");
 					link.innerHTML = link.href = result[0];
-					
+
 					if (before) {
 						node.insertBefore(document.createTextNode(before), child);
 					}
 
 					node.insertBefore(link, child);
-					
+
 					if (after) {
 						child.nodeValue = after;
 						i--; /* re-try with the aftertext */

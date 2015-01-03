@@ -11,14 +11,14 @@ if (!Function.prototype.bind) {
 
 var MM = {
 	_subscribers: {},
-	
+
 	publish: function(message, publisher, data) {
 		var subscribers = this._subscribers[message] || [];
 		subscribers.forEach(function(subscriber) {
 			subscriber.handleMessage(message, publisher, data);
 		});
 	},
-	
+
 	subscribe: function(message, subscriber) {
 		if (!(message in this._subscribers)) {
 			this._subscribers[message] = [];
@@ -26,12 +26,12 @@ var MM = {
 		var index = this._subscribers[message].indexOf(subscriber);
 		if (index == -1) { this._subscribers[message].push(subscriber); }
 	},
-	
+
 	unsubscribe: function(message, subscriber) {
 		var index = this._subscribers[message].indexOf(subscriber);
 		if (index > -1) { this._subscribers[message].splice(index, 1); }
 	},
-	
+
 	generateId: function() {
 		var str = "";
 		for (var i=0;i<8;i++) {
@@ -297,6 +297,8 @@ MM.Item = function() {
 	this._autoShape = true;
 	this._color = null;
 	this._value = null;
+	this._link_url = null;
+	this._link_title = null;
 	this._status = null;
 	this._side = null; /* side preference */
 	this._id = MM.generateId();
@@ -315,22 +317,42 @@ MM.Item = function() {
 		text: document.createElement("div"),
 		children: document.createElement("ul"),
 		toggle: document.createElement("div"),
+		add: document.createElement("div"),
+			_input: document.createElement("input"),
+			_submit: document.createElement("button"),
+			_link: document.createElement("a"),
+			_delLink: document.createElement("button"),
 		canvas: document.createElement("canvas")
 	}
+
 	this._dom.node.classList.add("item");
 	this._dom.content.classList.add("content");
 	this._dom.status.classList.add("status");
 	this._dom.value.classList.add("value");
 	this._dom.text.classList.add("text");
 	this._dom.toggle.classList.add("toggle");
+	this._dom.add.classList.add("add");
 	this._dom.children.classList.add("children");
+	this._dom._input.type = "text";
+	this._dom._input.name = "link";
+	this._dom._submit.textContent = "submit";
 
 	this._dom.content.appendChild(this._dom.text); /* status+value are appended in layout */
+	this._dom.content.appendChild(this._dom._link);
+	this._dom.add.appendChild(this._dom._input);
+	this._dom.add.appendChild(this._dom._submit);
+
 	this._dom.node.appendChild(this._dom.canvas);
 	this._dom.node.appendChild(this._dom.content);
+	this._dom.node.appendChild(this._dom.add);
+
 	/* toggle+children are appended when children exist */
 
+	this._dom._submit.addEventListener("click", this);
 	this._dom.toggle.addEventListener("click", this);
+	this._dom._input.addEventListener("click", this);
+	this._dom.add.addEventListener("mouseover", this);
+	this._dom.add.addEventListener("mouseleave", this);
 }
 
 MM.Item.COLOR = "#999";
@@ -343,7 +365,7 @@ MM.Item.COLOR = "#999";
      *                                                                                    ______ path, search
      *                                                                                          __________________________ end with a non-forbidden char
      *                                                                                                                    ______ end of word or end of string
-     */                                                                                                                           
+     */
 MM.Item.RE = /\b(([a-z][\w-]+:\/\/\w)|(([\w-]+\.){2,}[a-z][\w-]+)|([\w-]+\.[a-z][\w-]+\/))[^\s]*([^\s,.;:?!<>\(\)\[\]'"])?($|\b)/i;
 
 MM.Item.fromJSON = function(data) {
@@ -355,10 +377,11 @@ MM.Item.prototype.toJSON = function() {
 		id: this._id,
 		text: this.getText()
 	}
-	
+
 	if (this._side) { data.side = this._side; }
 	if (this._color) { data.color = this._color; }
 	if (this._value) { data.value = this._value; }
+	if (this._link) {data.link_title = this._dom._link.textContent; data.link_url = this._dom._link.href}
 	if (this._status) { data.status = this._status; }
 	if (this._layout) { data.layout = this._layout.id; }
 	if (!this._autoShape) { data.shape = this._shape.id; }
@@ -379,6 +402,8 @@ MM.Item.prototype.fromJSON = function(data) {
 	if (data.side) { this._side = data.side; }
 	if (data.color) { this._color = data.color; }
 	if (data.value) { this._value = data.value; }
+	if (data.link_title) {this._link_title = data.link_title; }
+	if (data.link_url) {this._link_url = data.link_url; }
 	if (data.status) {
 		this._status = data.status;
 		if (this._status == "maybe") { this._status = "computed"; }
@@ -399,22 +424,22 @@ MM.Item.prototype.mergeWith = function(data) {
 
 	if (this.getText() != data.text && !this._dom.text.contentEditable) { this.setText(data.text); }
 
-	if (this._side != data.side) { 
+	if (this._side != data.side) {
 		this._side = data.side;
 		dirty = 1;
 	}
 
-	if (this._color != data.color) { 
+	if (this._color != data.color) {
 		this._color = data.color;
 		dirty = 2;
 	}
 
-	if (this._value != data.value) { 
+	if (this._value != data.value) {
 		this._value = data.value;
 		dirty = 1;
 	}
 
-	if (this._status != data.status) { 
+	if (this._status != data.status) {
 		this._status = data.status;
 		dirty = 1;
 	}
@@ -490,7 +515,7 @@ MM.Item.prototype.update = function(doNotRecurse) {
 			this._shape.set(this);
 		}
 	}
-	
+
 	this._updateStatus();
 	this._updateValue();
 
@@ -603,7 +628,7 @@ MM.Item.prototype.getOwnLayout = function() {
 
 MM.Item.prototype.setLayout = function(layout) {
 	this._layout = layout;
-	return this.updateSubtree();	
+	return this.updateSubtree();
 }
 
 MM.Item.prototype.getShape = function() {
@@ -658,7 +683,7 @@ MM.Item.prototype.setParent = function(parent) {
 MM.Item.prototype.insertChild = function(child, index) {
 	/* Create or remove child as necessary. This must be done before computing the index (inserting own child) */
 	var newChild = false;
-	if (!child) { 
+	if (!child) {
 		child = new MM.Item();
 		newChild = true;
 	} else if (child.getParent() && child.getParent().removeChild) { /* only when the child has non-map parent */
@@ -671,12 +696,12 @@ MM.Item.prototype.insertChild = function(child, index) {
 	}
 
 	if (arguments.length < 2) { index = this._children.length; }
-	
+
 	var next = null;
 	if (index < this._children.length) { next = this._children[index].getDOM().node; }
 	this._dom.children.insertBefore(child.getDOM().node, next);
 	this._children.splice(index, 0, child);
-	
+
 	return child.setParent(this);
 }
 
@@ -685,14 +710,14 @@ MM.Item.prototype.removeChild = function(child) {
 	this._children.splice(index, 1);
 	var node = child.getDOM().node;
 	node.parentNode.removeChild(node);
-	
+
 	child.setParent(null);
-	
+
 	if (!this._children.length) {
 		this._dom.toggle.parentNode.removeChild(this._dom.toggle);
 		this._dom.children.parentNode.removeChild(this._dom.children);
 	}
-	
+
 	return this.update();
 }
 
@@ -727,6 +752,7 @@ MM.Item.prototype.stopEditing = function() {
 }
 
 MM.Item.prototype.handleEvent = function(e) {
+	var self = this;
 	switch (e.type) {
 		case "input":
 			this.update();
@@ -734,6 +760,9 @@ MM.Item.prototype.handleEvent = function(e) {
 		break;
 
 		case "keydown":
+			if (e.target == this._dom._input) {
+				e.stopPropagation();
+			}
 			if (e.keyCode == 9) { e.preventDefault(); } /* TAB has a special meaning in this app, do not use it to change focus */
 		break;
 
@@ -741,11 +770,69 @@ MM.Item.prototype.handleEvent = function(e) {
 			MM.Command.Finish.execute();
 		break;
 
+		case "mousemove":
+		case "mousedown":
+			if (e.target == this._dom._input) {
+				e.stopPropagation();
+				return;
+			}
+		break;
+
 		case "click":
+			if (e.target == this._dom._input) {
+				e.stopPropagation();
+				return;
+			}
+			if (e.target == this._dom._submit) {
+				var url = this._dom._input.value;
+				console.log(this._dom._input.value);
+				$.ajax({
+					type: 'POST',
+					url: 'http://localhost:3000/api/links/getTitle',
+					data: {link_url: url},
+					success: function(data) {
+						var title = data.data.title;
+						self._link = {title: title};
+						self._dom._link.textContent = title;
+						self._dom._link.href = url;
+						if (data.data.img) {
+							self._link.img = data.data.img;
+							var img = document.createElement("img");
+							img.src = data.data.img;
+							self._dom.content.appendChild(img);
+							self._dom.content.classList.add('saved');
+						}
+						self._dom.add.classList.add('disabled');
+						self.update();
+					},
+					error: function(xhr, type) {
+
+					}
+				});
+			}
 			if (this._collapsed) { this.expand(); } else { this.collapse(); }
 			MM.App.select(this);
 		break;
+
+		case "mouseover":
+			if (e.target == this._dom.add) {
+				this._dom.add.classList.add('active');
+				console.log('hover')
+			}
+		break;
+
+		case "mouseleave":
+			if (e.target == this._dom.add) {
+				this._dom.add.classList.remove('active');
+			}
+		break;
 	}
+}
+// douban book;
+// link
+//
+MM.Item.prototype.showResourceType = function() {
+
 }
 
 MM.Item.prototype._getAutoShape = function() {
@@ -756,9 +843,9 @@ MM.Item.prototype._getAutoShape = function() {
 		node = node.getParent();
 	}
 	switch (depth) {
-		case 0: return MM.Shape.Ellipse;
+		case 0: return MM.Shape.Box;
 		case 1: return MM.Shape.Box;
-		default: return MM.Shape.Underline;
+		default: return MM.Shape.Box;
 	}
 }
 
@@ -800,11 +887,11 @@ MM.Item.prototype._updateValue = function() {
 		this._dom.value.innerHTML = this._value;
 		return;
 	}
-	
+
 	var childValues = this._children.map(function(child) {
 		return child.getComputedValue();
 	});
-	
+
 	var result = 0;
 	switch (this._value) {
 		case "sum":
@@ -812,22 +899,22 @@ MM.Item.prototype._updateValue = function() {
 				return prev+cur;
 			}, 0);
 		break;
-		
+
 		case "avg":
 			var sum = childValues.reduce(function(prev, cur) {
 				return prev+cur;
 			}, 0);
 			result = (childValues.length ? sum/childValues.length : 0);
 		break;
-		
+
 		case "max":
 			result = Math.max.apply(Math, childValues);
 		break;
-		
+
 		case "min":
 			result = Math.min.apply(Math, childValues);
 		break;
-		
+
 		default:
 			this._computed.value = 0;
 			this._dom.value.innerHTML = "";
@@ -835,7 +922,7 @@ MM.Item.prototype._updateValue = function() {
 			return;
 		break;
 	}
-	
+
 	this._computed.value = result;
 	this._dom.value.innerHTML = (Math.round(result) == result ? result : result.toFixed(3));
 }
@@ -850,7 +937,7 @@ MM.Item.prototype._findLinks = function(node) {
 				if (child.nodeName.toLowerCase() == "a") { continue; }
 				this._findLinks(child);
 			break;
-			
+
 			case 3: /* text */
 				var result = child.nodeValue.match(this.constructor.RE);
 				if (result) {
@@ -858,13 +945,13 @@ MM.Item.prototype._findLinks = function(node) {
 					var after = child.nodeValue.substring(result.index + result[0].length);
 					var link = document.createElement("a");
 					link.innerHTML = link.href = result[0];
-					
+
 					if (before) {
 						node.insertBefore(document.createTextNode(before), child);
 					}
 
 					node.insertBefore(link, child);
-					
+
 					if (after) {
 						child.nodeValue = after;
 						i--; /* re-try with the aftertext */
@@ -1152,11 +1239,12 @@ MM.Keyboard.init = function() {
 MM.Keyboard.handleEvent = function(e) {
 	/* mode 2a: ignore keyboard when the activeElement resides somewhere inside of the UI pane */
 	var node = document.activeElement;
+	if (node.nodeName == 'INPUT') {return;}
 	while (node && node != document) {
 		if (node.classList.contains("ui")) { return; }
 		node = node.parentNode;
 	}
-	
+
 	var commands = MM.Command.getAll();
 	for (var i=0;i<commands.length;i++) {
 		var command = commands[i];
@@ -2107,7 +2195,7 @@ MM.Layout.pick = function(item, dir) {
 		top: "bottom",
 		bottom: "top"
 	}
-	
+
 	/* direction for a child */
 	if (!item.isCollapsed()) {
 		var children = item.getChildren();
@@ -2118,7 +2206,7 @@ MM.Layout.pick = function(item, dir) {
 	}
 
 	if (item.isRoot()) { return item; }
-	
+
 	var parentLayout = item.getParent().getLayout();
 	var thisChildDirection = parentLayout.getChildDirection(item);
 	if (thisChildDirection == dir) {
@@ -2149,7 +2237,39 @@ MM.Layout._anchorCanvas = function(item) {
 	dom.canvas.height = dom.node.offsetHeight;
 }
 
+MM.Layout._anchorAdd = function(item, x, y, side) {
+	var node = item.getDOM().add;
+	var w = node.offsetWidth;
+	var h = node.offsetHeight;
+	var l = x - 20;
+	var t = y - h/2;
+
+	// switch (side) {
+	// 	case "left":
+	// 		t -= h/2;
+	// 		l -= w;
+	// 	break;
+
+	// 	case "right":
+	// 		t -= h/2;
+	// 	break;
+
+	// 	case "top":
+	// 		l -= w/2;
+	// 		t -= h;
+	// 	break;
+
+	// 	case "bottom":
+	// 		l -= w/2;
+	// 	break;
+	// }
+
+	node.style.left = Math.round(l) + "px";
+	node.style.top = Math.round(t) + "px";
+}
+
 MM.Layout._anchorToggle = function(item, x, y, side) {
+	MM.Layout._anchorAdd(item, x, y, side);
 	var node = item.getDOM().toggle;
 	var w = node.offsetWidth;
 	var h = node.offsetHeight;
@@ -2165,7 +2285,7 @@ MM.Layout._anchorToggle = function(item, x, y, side) {
 		case "right":
 			t -= h/2;
 		break;
-		
+
 		case "top":
 			l -= w/2;
 			t -= h;
@@ -2175,7 +2295,7 @@ MM.Layout._anchorToggle = function(item, x, y, side) {
 			l -= w/2;
 		break;
 	}
-	
+
 	node.style.left = Math.round(l) + "px";
 	node.style.top = Math.round(t) + "px";
 }
@@ -2356,8 +2476,9 @@ MM.Layout.Graph._drawHorizontalConnectors = function(item, side, children) {
 	} else {
 		var x1 = dom.content.offsetWidth + dom.content.offsetLeft + 0.5;
 	}
-	
+
 	this._anchorToggle(item, x1, y1, side);
+	this._anchorAdd(item, x1, y2, side);
 	if (item.isCollapsed()) { return; }
 
 	if (children.length == 1) {
@@ -2420,7 +2541,7 @@ MM.Layout.Graph._drawVerticalConnectors = function(item, side, children) {
 
 	/* first part */
 	var R = this.SPACING_RANK/2;
-	
+
 	var x = item.getShape().getHorizontalAnchor(item);
 	var height = (children.length == 1 ? 2*R : R);
 
@@ -4782,12 +4903,12 @@ MM.Mouse.handleEvent = function(e) {
 			var item = MM.App.map.getItemFor(e.target);
 			if (item) { MM.App.select(item); }
 		break;
-		
+
 		case "dblclick":
 			var item = MM.App.map.getItemFor(e.target);
 			if (item) { MM.Command.Edit.execute(); }
 		break;
-		
+
 		case "contextmenu":
 			this._endDrag();
 			e.preventDefault();
@@ -4803,11 +4924,12 @@ MM.Mouse.handleEvent = function(e) {
 			e.clientX = e.touches[0].clientX;
 			e.clientY = e.touches[0].clientY;
 		case "mousedown":
+			if (e.target.nodeName == 'INPUT') {return;}
 			if (e.type == "mousedown") { e.preventDefault(); } /* to prevent blurring the clipboard node */
 			var item = MM.App.map.getItemFor(e.target);
 
 			if (e.type == "touchstart") { /* context menu here, after we have the item */
-				this._touchTimeout = setTimeout(function() { 
+				this._touchTimeout = setTimeout(function() {
 					item && MM.App.select(item);
 					MM.Menu.open(e.clientX, e.clientY);
 				}, this.TOUCH_DELAY);
@@ -4820,7 +4942,7 @@ MM.Mouse.handleEvent = function(e) {
 
 			this._startDrag(e, item);
 		break;
-		
+
 		case "touchmove":
 			if (e.touches.length > 1) { return; }
 			e.clientX = e.touches[0].clientX;
@@ -4829,7 +4951,7 @@ MM.Mouse.handleEvent = function(e) {
 		case "mousemove":
 			this._processDrag(e);
 		break;
-		
+
 		case "touchend":
 			clearTimeout(this._touchTimeout);
 		case "mouseup":
@@ -4860,7 +4982,7 @@ MM.Mouse._startDrag = function(e, item) {
 	this._cursor[0] = e.clientX;
 	this._cursor[1] = e.clientY;
 
-	if (item && !item.isRoot()) { 
+	if (item && !item.isRoot()) {
 		this._mode = "drag";
 		this._item = item;
 	} else {
@@ -4878,9 +5000,9 @@ MM.Mouse._processDrag = function(e) {
 
 	switch (this._mode) {
 		case "drag":
-			if (!this._ghost) { 
+			if (!this._ghost) {
 				this._port.style.cursor = "move";
-				this._buildGhost(dx, dy); 
+				this._buildGhost(dx, dy);
 			}
 			this._moveGhost(dx, dy);
 			var state = this._computeDragState();
@@ -4971,7 +5093,7 @@ MM.Mouse._computeDragState = function() {
 		if (tmp == this._item) { return state; } /* drop on a child or self */
 		tmp = tmp.getParent();
 	}
-	
+
 	var w1 = this._item.getDOM().content.offsetWidth;
 	var w2 = target.getDOM().content.offsetWidth;
 	var w = Math.max(w1, w2);

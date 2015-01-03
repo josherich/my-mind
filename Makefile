@@ -66,3 +66,7 @@ push:
 
 clean:
 	@rm my-mind.js
+
+watch:
+	watchman watch $(shell pwd)
+	watchman -- trigger $(shell pwd) remake src/*.js -- make all

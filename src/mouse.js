@@ -27,12 +27,12 @@ MM.Mouse.handleEvent = function(e) {
 			var item = MM.App.map.getItemFor(e.target);
 			if (item) { MM.App.select(item); }
 		break;
-		
+
 		case "dblclick":
 			var item = MM.App.map.getItemFor(e.target);
 			if (item) { MM.Command.Edit.execute(); }
 		break;
-		
+
 		case "contextmenu":
 			this._endDrag();
 			e.preventDefault();
@@ -48,11 +48,12 @@ MM.Mouse.handleEvent = function(e) {
 			e.clientX = e.touches[0].clientX;
 			e.clientY = e.touches[0].clientY;
 		case "mousedown":
+			if (e.target.nodeName == 'INPUT') {return;}
 			if (e.type == "mousedown") { e.preventDefault(); } /* to prevent blurring the clipboard node */
 			var item = MM.App.map.getItemFor(e.target);
 
 			if (e.type == "touchstart") { /* context menu here, after we have the item */
-				this._touchTimeout = setTimeout(function() { 
+				this._touchTimeout = setTimeout(function() {
 					item && MM.App.select(item);
 					MM.Menu.open(e.clientX, e.clientY);
 				}, this.TOUCH_DELAY);
@@ -65,7 +66,7 @@ MM.Mouse.handleEvent = function(e) {
 
 			this._startDrag(e, item);
 		break;
-		
+
 		case "touchmove":
 			if (e.touches.length > 1) { return; }
 			e.clientX = e.touches[0].clientX;
@@ -74,7 +75,7 @@ MM.Mouse.handleEvent = function(e) {
 		case "mousemove":
 			this._processDrag(e);
 		break;
-		
+
 		case "touchend":
 			clearTimeout(this._touchTimeout);
 		case "mouseup":
@@ -105,7 +106,7 @@ MM.Mouse._startDrag = function(e, item) {
 	this._cursor[0] = e.clientX;
 	this._cursor[1] = e.clientY;
 
-	if (item && !item.isRoot()) { 
+	if (item && !item.isRoot()) {
 		this._mode = "drag";
 		this._item = item;
 	} else {
@@ -123,9 +124,9 @@ MM.Mouse._processDrag = function(e) {
 
 	switch (this._mode) {
 		case "drag":
-			if (!this._ghost) { 
+			if (!this._ghost) {
 				this._port.style.cursor = "move";
-				this._buildGhost(dx, dy); 
+				this._buildGhost(dx, dy);
 			}
 			this._moveGhost(dx, dy);
 			var state = this._computeDragState();
@@ -216,7 +217,7 @@ MM.Mouse._computeDragState = function() {
 		if (tmp == this._item) { return state; } /* drop on a child or self */
 		tmp = tmp.getParent();
 	}
-	
+
 	var w1 = this._item.getDOM().content.offsetWidth;
 	var w2 = target.getDOM().content.offsetWidth;
 	var w = Math.max(w1, w2);

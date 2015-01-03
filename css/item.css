@@ -15,8 +15,25 @@
 	display: inline-block;
 	white-space: nowrap;
 	cursor: pointer;
+	min-width: 100px;
 }
-
+.content.saved {
+	min-height: 92px;
+	min-width: 210px;
+}
+.content a {
+	display: block;
+	max-width: 140px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: normal;
+	font-size: 12px;
+}
+.content img {
+	position: absolute;
+	top: 3px;
+	right: 3px;
+}
 .content > * {
 	vertical-align: middle;
 }
@@ -86,6 +103,38 @@ canvas {
 	font-family: sans-serif;
 	color: #fff;
 	opacity: 0.7;
+}
+.add {
+	position: absolute;
+	line-height: 12px;
+	cursor: pointer;
+	border: 1px solid #666;
+	background-color: white;
+	text-align: left;
+	font-weight: bold;
+	font-family: sans-serif;
+	color: black;
+	opacity: 1;
+}
+.add.disabled {
+	display: none;
+}
+
+.add input, .add button, .add a {
+	display: none;
+	margin:  10px;
+}
+
+.add.active input, .add.active button, .add.active a {
+	display: block;
+}
+
+.add:before {
+	content: "+";
+}
+
+.add:hover {
+	-webkit-tranform: rotate(90deg);
 }
 
 .toggle:hover {

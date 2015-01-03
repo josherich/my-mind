@@ -5,6 +5,7 @@
 		<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0" />
 		<title>My Mind</title>
 		<link rel="icon" href="favicon.ico" />
+		<script src="bower_components/zepto/zepto.min.js"></script>
 		<script src="my-mind.js"></script>
 		<script src="https://cdn.firebase.com/js/client/1.0.15/firebase.js"></script>
 		<script src="https://cdn.firebase.com/js/simple-login/1.5.0/firebase-simple-login.js"></script>
@@ -90,7 +91,7 @@
 				<span>Storage</span>
 				<select id="backend"></select>
 			</p>
-			
+
 			<div id="file">
 				<p class="desc">Local files are suitable for loading/saving files from other mindmapping applications.</p>
 				<p data-for="save">
@@ -189,7 +190,7 @@
 			<p><span>Other</span></p>
 			<table class="other"></table>
 		</div>
-		
+
 		<div id="menu">
 			<button data-command="InsertChild"></button>
 			<button data-command="InsertSibling"></button>

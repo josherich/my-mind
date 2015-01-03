@@ -131,8 +131,9 @@ MM.Layout.Graph._drawHorizontalConnectors = function(item, side, children) {
 	} else {
 		var x1 = dom.content.offsetWidth + dom.content.offsetLeft + 0.5;
 	}
-	
+
 	this._anchorToggle(item, x1, y1, side);
+	this._anchorAdd(item, x1, y2, side);
 	if (item.isCollapsed()) { return; }
 
 	if (children.length == 1) {
@@ -195,7 +196,7 @@ MM.Layout.Graph._drawVerticalConnectors = function(item, side, children) {
 
 	/* first part */
 	var R = this.SPACING_RANK/2;
-	
+
 	var x = item.getShape().getHorizontalAnchor(item);
 	var height = (children.length == 1 ? 2*R : R);
 

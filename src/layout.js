@@ -29,7 +29,7 @@ MM.Layout.pick = function(item, dir) {
 		top: "bottom",
 		bottom: "top"
 	}
-	
+
 	/* direction for a child */
 	if (!item.isCollapsed()) {
 		var children = item.getChildren();
@@ -40,7 +40,7 @@ MM.Layout.pick = function(item, dir) {
 	}
 
 	if (item.isRoot()) { return item; }
-	
+
 	var parentLayout = item.getParent().getLayout();
 	var thisChildDirection = parentLayout.getChildDirection(item);
 	if (thisChildDirection == dir) {
@@ -71,7 +71,39 @@ MM.Layout._anchorCanvas = function(item) {
 	dom.canvas.height = dom.node.offsetHeight;
 }
 
+MM.Layout._anchorAdd = function(item, x, y, side) {
+	var node = item.getDOM().add;
+	var w = node.offsetWidth;
+	var h = node.offsetHeight;
+	var l = x - 20;
+	var t = y - h/2;
+
+	// switch (side) {
+	// 	case "left":
+	// 		t -= h/2;
+	// 		l -= w;
+	// 	break;
+
+	// 	case "right":
+	// 		t -= h/2;
+	// 	break;
+
+	// 	case "top":
+	// 		l -= w/2;
+	// 		t -= h;
+	// 	break;
+
+	// 	case "bottom":
+	// 		l -= w/2;
+	// 	break;
+	// }
+
+	node.style.left = Math.round(l) + "px";
+	node.style.top = Math.round(t) + "px";
+}
+
 MM.Layout._anchorToggle = function(item, x, y, side) {
+	MM.Layout._anchorAdd(item, x, y, side);
 	var node = item.getDOM().toggle;
 	var w = node.offsetWidth;
 	var h = node.offsetHeight;
@@ -87,7 +119,7 @@ MM.Layout._anchorToggle = function(item, x, y, side) {
 		case "right":
 			t -= h/2;
 		break;
-		
+
 		case "top":
 			l -= w/2;
 			t -= h;
@@ -97,7 +129,7 @@ MM.Layout._anchorToggle = function(item, x, y, side) {
 			l -= w/2;
 		break;
 	}
-	
+
 	node.style.left = Math.round(l) + "px";
 	node.style.top = Math.round(t) + "px";
 }
