@@ -3,6 +3,9 @@ My Mind
 
 ![Screenshot](screenshot.png)
 
+I did some experiments on creating a resource node, making mind map a way to show a book list, or some webpage collections. it would be great if I could create a website where people can write and share websites or resources as a mind map, and I'm working on it.
+
+=======
 My Mind is a web application for creating and managing Mind maps. It is free to use and you can fork its source code. It is distributed under the terms of the MIT license.
 
 New to Mind maps? They are useful, aesthetic and cool! Read more about these special diagrams in [the Wikipedia article](http://en.wikipedia.org/wiki/Mind_map).

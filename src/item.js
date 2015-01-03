@@ -46,6 +46,7 @@ MM.Item = function() {
 	this._dom.children.classList.add("children");
 	this._dom._input.type = "text";
 	this._dom._input.name = "link";
+	this._dom._input.placeholder = "enter URL";
 	this._dom._submit.textContent = "submit";
 
 	this._dom.content.appendChild(this._dom.text); /* status+value are appended in layout */
