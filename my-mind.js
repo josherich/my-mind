@@ -9,6 +9,10 @@ if (!Function.prototype.bind) {
 	}
 };
 
+
+
+
+
 var MM = {
 	_subscribers: {},
 
@@ -789,7 +793,7 @@ MM.Item.prototype.handleEvent = function(e) {
 				console.log(this._dom._input.value);
 				$.ajax({
 					type: 'POST',
-					url: 'http://localhost:3000/api/links/getTitle',
+					url: 'http://localhost:8090/api/links/getInfo',
 					data: {link_url: url},
 					success: function(data) {
 						var title = data.data.title;
