@@ -1,0 +1,10 @@
+{
+  "douban": {
+    "name": "豆瓣",
+    "re": "douban.com"
+  },
+  "weibo": {
+    "name": "微博",
+    "re": "weibo.com"
+  }
+}

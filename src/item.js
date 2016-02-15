@@ -1,3 +1,23 @@
+// import linkTypeDict from './linkType.json'
+ var linkTypeDict = {
+  "douban": {
+    "name": "豆瓣",
+    "re": /douban.com/g
+  },
+  "weibo": {
+    "name": "微博",
+    "re": /weibo.com/g
+  },
+  "zhihu": {
+    "name": "知乎",
+    "re": /zhihu.com/g
+  },
+  "image": {
+    "name": "IMG",
+    "re": /.*\.jpg/g
+  }
+}
+
 MM.Item = function() {
 	this._parent = null;
 	this._children = [];
@@ -498,29 +518,22 @@ MM.Item.prototype.handleEvent = function(e) {
 			if (e.target == this._dom._submit) {
 				var url = this._dom._input.value;
 				console.log(this._dom._input.value);
-				$.ajax({
-					type: 'POST',
-					url: 'http://localhost:3000/api/links/getTitle',
-					data: {link_url: url},
-					success: function(data) {
-						var title = data.data.title;
-						self._link = {title: title};
-						self._dom._link.textContent = title;
-						self._dom._link.href = url;
-						if (data.data.img) {
-							self._link.img = data.data.img;
-							var img = document.createElement("img");
-							img.src = data.data.img;
-							self._dom.content.appendChild(img);
-							self._dom.content.classList.add('saved');
-						}
-						self._dom.add.classList.add('disabled');
-						self.update();
-					},
-					error: function(xhr, type) {
-
-					}
-				});
+        
+        var data = {
+          title: "What If",
+          img: "http://img3.douban.com/lpic/s28059454.jpg"
+        } 
+        
+        self.appendURLNode(data, url)
+				// $.ajax({
+				// 	type: 'POST',
+				// 	url: 'http://localhost:8090/api/links/getInfo',
+				// 	data: {link_url: url},
+				// 	success: function(data) {
+				// 		self.appendURLNode(data, url)
+				// 	},
+				// 	error: function(xhr, type) {}
+				// });
 			}
 			if (this._collapsed) { this.expand(); } else { this.collapse(); }
 			MM.App.select(this);
@@ -543,8 +556,41 @@ MM.Item.prototype.handleEvent = function(e) {
 // douban book;
 // link
 //
+
+MM.Item.prototype.appendURLNode = function(data, url) {
+  var self = this
+  var title = data.title
+  self._link = { title: title }
+  self._dom._link.textContent = title
+  self._dom._link.href = url
+  if (data.img) {
+    self._link.img = data.img
+    var img = document.createElement("img")
+    img.src = data.img
+    self._dom.content.appendChild(img)
+    self._dom.content.classList.add('saved')
+  }
+  self._dom.add.classList.add('disabled')
+  self.update()
+}
+
 MM.Item.prototype.showResourceType = function() {
 
+}
+
+MM.Item.prototype.getLinkType = function(linkText) {
+  var reg = new RegExp()
+  var res = null
+  for (var i in linkTypeDict) {
+    reg = linkTypeDict[i].re
+    res = reg.exec(linkText)
+    if (res) {
+      return linkTypeDict[i].name
+    } else {
+      continue
+    }
+  }
+  return null
 }
 
 MM.Item.prototype._getAutoShape = function() {

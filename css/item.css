@@ -33,6 +33,7 @@
 	position: absolute;
 	top: 3px;
 	right: 3px;
+  width: 50px;
 }
 .content > * {
 	vertical-align: middle;
@@ -108,7 +109,7 @@ canvas {
 	position: absolute;
 	line-height: 12px;
 	cursor: pointer;
-	border: 1px solid #666;
+	border: 1px solid #C9C9C9;
 	background-color: white;
 	text-align: left;
 	font-weight: bold;
@@ -122,15 +123,35 @@ canvas {
 
 .add input, .add button, .add a {
 	display: none;
-	margin:  10px;
+	margin:  8px;
 }
 
 .add.active input, .add.active button, .add.active a {
 	display: block;
 }
 
+.add.active input {
+  height: 25px;
+  border-radius: 3px;
+  border: 1px solid #C9C9C9;
+  padding-left: 6px;
+}
+
+.add.active button {
+    float: right;
+    background: #6C6CFF;
+    color: white;
+    border: 0;
+    padding: 4px 6px;
+    border-radius: 3px;
+}
+
 .add:before {
 	content: "+";
+}
+
+.add.active:before {
+	content: "";
 }
 
 .add:hover {
